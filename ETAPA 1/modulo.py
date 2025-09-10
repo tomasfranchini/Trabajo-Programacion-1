@@ -1,3 +1,6 @@
+import random
+
+# Solicitá al usuario un número entero, validando rango opcional
 def leer_entero(mensaje, minimo=None, maximo=None):
     """Lee un entero por consola, validando opcionalmente rango [minimo..maximo]."""
     valido = False
@@ -7,7 +10,7 @@ def leer_entero(mensaje, minimo=None, maximo=None):
         entrada = input(mensaje).strip()
 
         # Validar entero (acepta negativos con un solo '-')
-        if entrada.lstrip("-").isdigit() and entrada.count("-") <= 1 and not entrada.endswith("-"):
+        if entrada.lstrip("-").isdigit() and entrada.count("-") <= 1 and not (len(entrada) > 0 and entrada[-1] == "-"):
             v = int(entrada)
 
             if minimo is not None and v < minimo:
@@ -22,6 +25,7 @@ def leer_entero(mensaje, minimo=None, maximo=None):
 
     return valor
 
+# Solicitá al usuario una opción válida de un conjunto dado
 def leer_opcion(mensaje, opciones_validas):
     """Lee una opción de un conjunto permitido. Devuelve en mayúsculas."""
     opciones = [o.upper() for o in opciones_validas]
@@ -38,17 +42,26 @@ def leer_opcion(mensaje, opciones_validas):
 
     return valor
 
-
+# Normaliza el nombre de un equipo o jugador para impresión
 def normalizar_nombre(s):
     s = s.strip()
-    # Usar el método title() para capitalizar cada palabra automáticamente:
-    return s.title()
+    if len(s) >= 22:
+        resultado=""
+        resultado+=s[0]
+        while " " in s:
+            pos=s.index(" ")
+            resultado+=s[pos+1]
+            s=s[pos+1:]
+        return resultado.upper()
+    else:
+        return s.title()
 
 # -----------------------------
-# 1) Equipos y jugadores
+# Equipos y jugadores
 # -----------------------------
 
-def ingresar_EyJ(equipos, jugadores_nombres, goles_jug, amar_jug, rojas_jug):
+# Permite ingresar los nombres de los equipos y jugadores
+def ingresar_equipos_y_jugadores(equipos, jugadores_nombres, goles_jug, amar_jug, rojas_jug):
     """
     Carga 10 equipos y 10 jugadores por equipo.
     - equipos: lista de 10 nombres de equipo (str)
@@ -87,7 +100,7 @@ def ingresar_EyJ(equipos, jugadores_nombres, goles_jug, amar_jug, rojas_jug):
                 nombre_j = input(f"    Jugador {j+1} (enter = '{defecto}'): ").strip()
                 if nombre_j == "":
                     nombre_j = defecto
-                nombre_j = normalizar_nombre(nombre_j)
+                nombre_j = nombre_j.strip().title()
 
                 # unicidad dentro del equipo
                 existe_j = False
@@ -111,10 +124,10 @@ def ingresar_EyJ(equipos, jugadores_nombres, goles_jug, amar_jug, rojas_jug):
     print("Ingreso completado.\n")
 
 # -----------------------------
-# 2) Fixture (todos contra todos) + matriz de IDs por comprensión
+# Fixture (todos contra todos) + matriz de IDs por comprensión
 # -----------------------------
 
-def generar_fixture(partidos, fechas, fixture_ids):
+def generar_fixture(equipos,partidos, fechas, fixture_ids):
     """
     Genera fixture con 10 equipos (1..10) en formato liga (método del círculo).
     - Llena 'partidos': dic {id: {id, fecha, local, visitante, jugado, eventos:[], gl, gv}}
@@ -122,45 +135,42 @@ def generar_fixture(partidos, fechas, fixture_ids):
     - Llena 'fixture_ids' (10x10) con el id del partido para cada par (i,j). Diagonal en 0.
     """
     print("\n=== Generación automática de Fixture (todos contra todos) ===")
-    # Creación matriz fixture_ids en 0
-    fixture_ids = [[0] * 10 for _ in range(10)]
+    # La matriz fixture_ids ya viene inicializada, solo se modifica su contenido
     # lista de códigos 1..10
-    cods = list(range(1, 11))
-    rot = cods[1:]  # rotación, sin el primero
-
-    id_counter = 1
-    fecha = 1
-    while fecha <= 9:
-        izquierda = [cods[0]] + rot[:4]
-        derecha = rot[4:][::-1]
-        i = 0
-        while i < 5:
-            a = izquierda[i]
-            b = derecha[i]
-            # Alternamos localía por fecha
-            if fecha % 2 == 0:
-                local = b
-                visitante = a
-            else:
-                local = a
-                visitante = b
-            # Crear partido como lista: [id, fecha, local, visitante, jugado, eventos, gl, gv]
-            p = [id_counter, fecha, local, visitante, False, [], 0, 0]
-            partidos[id_counter] = p
-            if fecha not in fechas:
-                fechas[fecha] = []
-            fechas[fecha].append(id_counter)
-            # matriz fixture (simétrica)
-            fixture_ids[local-1][visitante-1] = id_counter
-            fixture_ids[visitante-1][local-1] = id_counter
-            id_counter += 1
-            i += 1
-        # rotar
-        if len(rot) > 0:
-            rot = [rot[-1]] + rot[:-1]
-        fecha += 1
-
-
+    # Generar todos los pares posibles (local, visitante) donde local < visitante
+    pares = []
+    i = 0
+    while i < 10:
+        j = i + 1
+        while j < 10:
+            pares.append([i, j])
+            j += 1
+        i += 1
+    # Crear lista de IDs del 1 al 45 y mezclar aleatoriamente
+    ids = [x+1 for x in range(45)]
+    # Mezclar usando asignación aleatoria de valores y .sort()
+    valores_aleatorios = [random.randint(1, 100000) for _ in range(45)]
+    ids.sort(key=lambda x: valores_aleatorios[x-1])
+    # Asignar los IDs mezclados a los pares
+    k = 0
+    while k < 45:
+        i = pares[k][0]
+        j = pares[k][1]
+        id_partido = ids[k]
+        # Asignar en la matriz (simétrica)
+        fixture_ids[i][j] = id_partido
+        fixture_ids[j][i] = id_partido
+        # Crear partido y asignar a la lista de partidos y fechas
+        fecha = (k // 5) + 1
+        p = [id_partido, fecha, i+1, j+1, False, [], 0, 0]
+        partidos.append(p)
+        fechas[fecha-1].append(id_partido)
+        k += 1
+    # Diagonal en cero
+    i = 0
+    while i < 10:
+        fixture_ids[i][i] = 0
+        i += 1
 
     # Mostrar matriz de fixture (IDs)
     print("\nMATRIZ DE FIXTURE (IDs)")
@@ -183,7 +193,7 @@ def generar_fixture(partidos, fechas, fixture_ids):
     print("\nFixture generado.\n")
 
 # -----------------------------
-# 3) Registro de partidos y eventos + validaciones
+# Registro de partidos y eventos + validaciones
 # -----------------------------
 
 def contar_goles_eventos(eventos, cod_local, cod_visitante):
@@ -206,6 +216,19 @@ def registrar_partidos_y_eventos(equipos, jugadores_nombres, partidos, fixture_i
     print("\n=== Registro de Partidos y Eventos ===")
     print("(Ingrese ID de partido = 0 para finalizar)")
 
+    # Mostrar matriz de fixture para ayudar al usuario
+    print("\nMATRIZ DE FIXTURE (IDs)")
+    cab = "     "
+    for c in range(1, 11):
+        cab += "%4d" % c
+    print(cab)
+    print("    " + "-" * 40)
+    for i in range(10):
+        fila = "%3d |" % (i+1)
+        for j in range(10):
+            fila += "%4d" % fixture_ids[i][j]
+        print(fila)
+
     fin = False
     while not fin:
         pid = leer_entero("ID de partido: ", minimo=0)
@@ -213,16 +236,15 @@ def registrar_partidos_y_eventos(equipos, jugadores_nombres, partidos, fixture_i
             print("Fin de registro.\n")
             fin = True
         else:
-            existe = False
-            for k in partidos:
-                if k == pid:
-                    existe = True
-            if not existe:
+            partido = None
+            for p in partidos:
+                if p[0] == pid:
+                    partido = p
+                    fin = True
+            if partido is None:
                 print("ID inexistente en el fixture.")
             else:
-                partido = partidos[pid]
                 jugado = False
-                # partido como lista: [id, fecha, local, visitante, jugado, eventos, gl, gv]
                 if len(partido) > 4:
                     jugado = partido[4]
                 if jugado:
@@ -259,8 +281,10 @@ def registrar_partidos_y_eventos(equipos, jugadores_nombres, partidos, fixture_i
                                         cod_j = leer_entero("  Código de jugador (1..10): ", minimo=1, maximo=10)
                                         minuto = leer_entero("  Minuto (0..90): ", minimo=0, maximo=90)
                                         eventos.append([tipo, cod_eq_ev, cod_j, minuto])
+
                             # Ordenar eventos por minuto (sort)
                             eventos.sort(key=lambda x: x[3])
+
                             # Consistencia resultado–eventos (contar G)
                             gl_ev = 0
                             gv_ev = 0
@@ -275,11 +299,13 @@ def registrar_partidos_y_eventos(equipos, jugadores_nombres, partidos, fixture_i
                                 print(f"Declarado: {gl_decl}-{gv_decl} | Por eventos: {gl_ev}-{gv_ev}")
                                 print("Registro cancelado. Vuelva a intentarlo.")
                             else:
+
                                 # Actualizar partido
                                 partido[4] = True
                                 partido[5] = eventos
                                 partido[6] = gl_decl
                                 partido[7] = gv_decl
+
                                 # Actualizar estadísticas de equipos
                                 idxL = cod_local - 1
                                 idxV = cod_visit - 1
@@ -298,6 +324,7 @@ def registrar_partidos_y_eventos(equipos, jugadores_nombres, partidos, fixture_i
                                 else:
                                     PE[idxL] += 1
                                     PE[idxV] += 1
+
                                 # Actualizar estadísticas individuales
                                 for e in eventos:
                                     i_eq = e[1] - 1
@@ -310,6 +337,150 @@ def registrar_partidos_y_eventos(equipos, jugadores_nombres, partidos, fixture_i
                                         rojas_jug[i_eq][j_jug] += 1
                                 print(f"Partido registrado: ID {pid} -> {equipos[cod_local-1]} {gl_decl}-{gv_decl} {equipos[cod_visit-1]}\n")
 
+# -----------------------------
+# Informes
+# -----------------------------
 
-"FALTA DESDE INFOMES, MENU Y MAIN"
+def puntos_equipo(PG, PE):
+    return PG * 3 + PE
+
+
+def ListadoPosiciones(equipos, PJ, PG, PE, PP, GF, GC):
+    print("\nTABLA DE POSICIONES")
+    print(" COD EQUIPO                  PJ  PG  PE  PP  GF  GC  DG  PTS")
+    filas = []
+    i = 0
+    while i < 10:
+        pts = puntos_equipo(PG[i], PE[i])
+        dg = GF[i] - GC[i]
+        filas.append([pts, i])
+        i += 1
+
+    # Orden: por PTS desc (sin desempates adicionales). Estable por índice.
+    filas.sort(key=lambda x: (-x[0])*100 + x[1])
+    for fila in filas:
+        pts = fila[0]
+        i = fila[1]
+        dg = GF[i] - GC[i]
+        print(" %3d %-22s %3d %3d %3d %3d %3d %3d %3d %4d" % (
+            i+1, equipos[i], PJ[i], PG[i], PE[i], PP[i], GF[i], GC[i], dg, pts
+        ))
+    print("-" * 64)
+
+
+def ListadoGoleadores(equipos, jugadores_nombres, goles_jug): 
+    print("\nRANKING DE GOLEADORES")
+    print(" GOLES  EQ  JUG  EQUIPO                 JUGADOR")
+    filas = []
+    i = 0
+    while i < 10:
+        j = 0
+        while j < 10:
+            g = goles_jug[i][j]
+            if g > 0:
+                filas.append([g, i, j])
+            j += 1
+        i += 1
+
+    # Orden: goles desc, luego por equipo y jugador (estable
+    filas.sort(key=lambda x: (-x[0])*10000 + x[1]*100 + x[2])
+    if len(filas) == 0:
+        print(" (No se registraron goles)")
+        return
+    for fila in filas:
+        g = fila[0] 
+        i = fila[1]
+        j = fila[2]
+        print(" %5d  %2d  %3d  %-22s %-20s" % (g, i+1, j+1, equipos[i], jugadores_nombres[i][j]))
+
+
+def EquipoLider(equipos, PG, PE):
+    # Máximo PTS (único según alcance). Si hubiera empate, toma el primero por índice.
+    mejor_pts = -1
+    idx = -1
+    i = 0
+    while i < 10:
+        pts = puntos_equipo(PG[i], PE[i])
+        if pts > mejor_pts:
+            mejor_pts = pts
+            idx = i
+        i += 1
+    if idx == -1:
+        print("\nEquipo líder: (no disponible)")
+    else:
+        print("\nEQUIPO LÍDER: #%d - %s | Puntos: %d" % (idx+1, equipos[idx], mejor_pts))
+
+
+def TotalesTorneo(equipos, partidos, PJ, PG, PE, PP, GF, GC, goles_jug, amar_jug, rojas_jug):
+    
+    # Totales de tarjetas y goles a partir de matrices
+    goles_total = 0
+    amar_total = 0
+    rojas_total = 0
+    i = 0
+    while i < 10:
+        j = 0
+        while j < 10:
+            goles_total += goles_jug[i][j]
+            amar_total += amar_jug[i][j]
+            rojas_total += rojas_jug[i][j]
+            j += 1
+        i += 1
+
+    # Promedio de goles por equipo (GF/PJ) por equipo
+    print("\nTOTALES DEL TORNEO")
+    print(" Goles totales:", goles_total)
+    print(" Amarillas totales:", amar_total)
+    print(" Rojas totales:", rojas_total)
+    print("\nPROMEDIO DE GOLES POR EQUIPO (GF/PJ)")
+    i = 0
+    while i < 10:
+        prom = GF[i] / PJ[i] if PJ[i] > 0 else 0.0
+
+        # Limitar a 2 decimales en impresión manual
+        prom_txt = ("%.2f" % prom)
+        print(" %2d %-22s PJ=%2d GF=%3d  Prom=%s" % (i+1, equipos[i], PJ[i], GF[i], prom_txt))
+        i += 1
+        
+    # Porcentaje de empates sobre total de partidos jugados
+    # Total de partidos jugados = cantidad de 'p' con jugado=True
+    jugados = 0
+    empates = 0
+    for partido in partidos:
+        if partido[4]:
+            jugados += 1
+            if partido[6] == partido[7]:
+                empates += 1
+    if jugados > 0:
+        porc_emp = (empates * 100.0) / jugados
+    else:
+        porc_emp = 0.0
+    print("\nPorcentaje de empates sobre partidos jugados: %.2f%%" % porc_emp)
+
+# -----------------------------
+# Menús
+# -----------------------------
+
+def menu_informes(equipos, jugadores_nombres, partidos, PJ, PG, PE, PP, GF, GC, goles_jug, amar_jug, rojas_jug):
+    seguir = True
+    while seguir:
+        print("""
+=== INFORMES ===
+1) Tabla de posiciones
+2) Ranking de goleadores
+3) Equipo líder
+4) Totales del torneo (incluye promedio GF/PJ y % de empates)
+0) Volver
+""")
+        op = leer_opcion("Opción: ", ["0","1","2","3","4"])
+        if op == '1':
+            ListadoPosiciones(equipos, PJ, PG, PE, PP, GF, GC)
+        elif op == '2':
+            ListadoGoleadores(equipos, jugadores_nombres, goles_jug)
+        elif op == '3':
+            EquipoLider(equipos, PG, PE)
+        elif op == '4':
+            TotalesTorneo(equipos, partidos, PJ, PG, PE, PP, GF, GC, goles_jug, amar_jug, rojas_jug)
+        elif op == '0':
+            seguir = False
 
