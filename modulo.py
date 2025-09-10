@@ -310,5 +310,6 @@ def registrar_partidos_y_eventos(equipos, jugadores_nombres, partidos, fixture_i
                                         rojas_jug[i_eq][j_jug] += 1
                                 print(f"Partido registrado: ID {pid} -> {equipos[cod_local-1]} {gl_decl}-{gv_decl} {equipos[cod_visit-1]}\n")
 
+
 "FALTA DESDE INFOMES, MENU Y MAIN"
 
