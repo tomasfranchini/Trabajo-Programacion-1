@@ -1,5 +1,5 @@
 # Trabajo-Programacion-1
-Este proyecto es una aplicación en Python que permite simular y gestionar un torneo de liga de fútbol con 10 equipos y 10 jugadores por equipo.
+"""Este proyecto es una aplicación en Python que permite simular y gestionar un torneo de liga de fútbol con 10 equipos y 10 jugadores por equipo.
 El sistema corre en consola e incluye funcionalidades para registrar partidos, calcular estadísticas y generar informes automáticos.
 
 Características principales:
@@ -25,10 +25,12 @@ Menú principal visto en Consola:
 4) Informes
 0) Salir
 
+
+Equipo 7 turno tarde miercoles
 Integrantes:
 Franchini Tomas (@tomasfranchini)
 Gaynor Manuel (@Gaynor09)
 Martinez Casso Ivan Ricardo  (@ivanchetis)
 Luro Santiago (@SantiagoLuro)
-Seeber Francisco (@Franseeber)
+Seeber Francisco (@Franseeber)"""
 
